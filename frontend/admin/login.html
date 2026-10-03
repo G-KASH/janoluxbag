@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>JANOLUXBAG | Admin Login</title>
+
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+
+<body class="admin-login-page">
+
+  <div class="login-container">
+
+    <div class="login-card">
+
+      <div class="login-logo">
+        <h1>JANOLUX<span>BAG</span></h1>
+        <p>Admin Panel</p>
+      </div>
+
+      <div class="login-header">
+        <h2>Welcome Back</h2>
+        <p>Login to manage your JanoluxBag store.</p>
+      </div>
+
+      <form id="adminLoginForm">
+
+        <div class="form-group">
+          <label for="email">Email Address</label>
+          <input
+            type="email"
+            id="email"
+            placeholder="admin@janoluxbag.com"
+            required
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+
+          <div class="password-wrapper">
+            <input
+              type="password"
+              id="password"
+              placeholder="Enter your password"
+              required
+            >
+
+            <button
+              type="button"
+              id="togglePassword"
+              class="toggle-password"
+            >
+              Show
+            </button>
+          </div>
+        </div>
+
+        <div id="loginMessage" class="login-message"></div>
+
+        <button type="submit" class="login-btn">
+          Login to Dashboard
+        </button>
+
+      </form>
+
+      <div class="login-footer">
+        <p>JANOLUXBAG Admin System</p>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script src="js/admin-login.js"></script>
+
+</body>
+</html>

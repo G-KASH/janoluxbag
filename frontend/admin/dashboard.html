@@ -1,0 +1,152 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JANOLUXBAG | Admin Dashboard</title>
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body class="dashboard-page">
+
+  <div class="admin-layout">
+
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-logo">
+        JANOLUX<span>BAG</span>
+      </div>
+
+      <div class="sidebar-menu">
+        <p class="menu-label">MAIN MENU</p>
+
+        <a href="dashboard.html" class="sidebar-link active">
+          <span>▦</span> Dashboard
+        </a>
+
+        <a href="products.html" class="sidebar-link">
+          <span>▣</span> Manage Products
+        </a>
+
+        <a href="add-product.html" class="sidebar-link">
+          <span>＋</span> Add Product
+        </a>
+
+        <p class="menu-label">STORE</p>
+
+        <a href="../index.html" target="_blank" class="sidebar-link">
+          <span>⌂</span> Visit Store
+        </a>
+      </div>
+
+      <button id="logoutBtn" class="logout-btn">
+        ⇥ Logout
+      </button>
+    </aside>
+
+    <main class="dashboard-main">
+
+      <header class="topbar">
+        <button class="menu-toggle" id="menuToggle">☰</button>
+
+        <div>
+          <h2>Dashboard</h2>
+          <p>Welcome to your store management panel.</p>
+        </div>
+
+        <div class="admin-profile">
+          <div class="profile-avatar">A</div>
+          <div>
+            <strong>Administrator</strong>
+            <small>Store Manager</small>
+          </div>
+        </div>
+      </header>
+
+      <section class="dashboard-content">
+
+        <div class="welcome-section">
+          <div>
+            <h1>Welcome Back!</h1>
+            <p>Here's what's happening with your store today.</p>
+          </div>
+
+          <a href="add-product.html" class="primary-action">
+            + Add New Product
+          </a>
+        </div>
+
+        <div class="stats-grid">
+
+          <div class="stat-card">
+            <div class="stat-icon purple-icon">▣</div>
+            <div>
+              <p>Total Products</p>
+              <h2 id="totalProducts">0</h2>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon gold-icon">◈</div>
+            <div>
+              <p>Featured Products</p>
+              <h2 id="featuredProducts">0</h2>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon green-icon">✓</div>
+            <div>
+              <p>In Stock</p>
+              <h2 id="inStockProducts">0</h2>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon red-icon">!</div>
+            <div>
+              <p>Low / Out of Stock</p>
+              <h2 id="lowStockProducts">0</h2>
+            </div>
+          </div>
+
+        </div>
+
+        <section class="dashboard-panel">
+          <div class="panel-heading">
+            <div>
+              <h2>Recent Products</h2>
+              <p>Your latest products added to the store.</p>
+            </div>
+
+            <a href="products.html" class="view-all">View All</a>
+          </div>
+
+          <div class="table-wrapper">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>Category</th>
+                  <th>Price</th>
+                  <th>Stock</th>
+                </tr>
+              </thead>
+
+              <tbody id="recentProducts">
+                <tr>
+                  <td colspan="4" class="empty-state">
+                    No products added yet.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+      </section>
+    </main>
+  </div>
+
+  <script src="js/dashboard.js"></script>
+</body>
+</html>
