@@ -1,0 +1,184 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Shop stylish and elegant bags at JanoluxBag. Explore handbags, shoulder bags, crossbody bags and more.">
+  <title>JANOLUXBAG | Fashion & Elegance</title>
+
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+</head>
+<body>
+
+  <!-- Announcement -->
+  <div class="announcement">
+    Discover elegance with JanoluxBag
+  </div>
+
+  <!-- Navigation -->
+  <header class="navbar">
+    <a href="index.html" class="logo">
+      JANO<span>LUX</span>BAG
+    </a>
+
+    <nav class="nav-links" id="navLinks">
+      <a href="index.html" class="active">Home</a>
+      <a href="#shop">Shop</a>
+      <a href="#about">About</a>
+      <a href="#contact">Contact</a>
+    </nav>
+
+    <div class="nav-actions">
+      <form class="search-box" id="searchForm">
+        <input type="search" id="searchInput" placeholder="Search products..." aria-label="Search products">
+        <button type="submit" aria-label="Search">
+          <i class="fas fa-search"></i>
+        </button>
+      </form>
+
+      <a href="cart.html" class="cart-link" aria-label="Shopping cart">
+        <i class="fas fa-shopping-bag"></i>
+        <span id="cartCount">0</span>
+      </a>
+
+      <button class="menu-toggle" id="menuToggle" aria-label="Toggle navigation">
+        <i class="fas fa-bars"></i>
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <!-- Hero -->
+    <section class="hero">
+      <div class="hero-content">
+        <span class="eyebrow">THE JANOLUX COLLECTION</span>
+        <h1>Elegance That<br><span>Defines You.</span></h1>
+        <p>
+          Discover timeless fashion, beautiful designs and
+          elegant bags made for every occasion.
+        </p>
+        <a href="#shop" class="btn-primary">
+          Explore Collection <i class="fas fa-arrow-right"></i>
+        </a>
+      </div>
+
+      <div class="hero-image">
+        <img
+          src="https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=1000"
+          alt="Elegant fashion handbag"
+        >
+      </div>
+    </section>
+
+    <!-- Categories -->
+    <section class="categories section-padding">
+      <div class="section-heading">
+        <span class="eyebrow">EXPLORE OUR STORE</span>
+        <h2>Shop By Category</h2>
+        <p>Find the perfect accessory for your personal style.</p>
+      </div>
+
+      <div class="category-grid">
+        <button class="category-card" data-category="Handbags">
+          <img src="https://images.unsplash.com/photo-1590874103328-eac38a683ce7?w=500" alt="Handbags">
+          <span>Handbags</span>
+        </button>
+
+        <button class="category-card" data-category="Shoulder Bags">
+          <img src="https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=500" alt="Shoulder bags">
+          <span>Shoulder Bags</span>
+        </button>
+
+        <button class="category-card" data-category="Crossbody Bags">
+          <img src="https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=500" alt="Crossbody bags">
+          <span>Crossbody Bags</span>
+        </button>
+
+        <button class="category-card" data-category="Tote Bags">
+          <img src="https://images.unsplash.com/photo-1591561954557-26941169b49e?w=500" alt="Tote bags">
+          <span>Tote Bags</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Products -->
+    <section class="products-section section-padding" id="shop">
+      <div class="section-heading">
+        <span class="eyebrow">HANDPICKED FOR YOU</span>
+        <h2>Featured Products</h2>
+        <p>Explore some of our latest fashion accessories.</p>
+      </div>
+
+      <div class="product-toolbar">
+        <p id="resultCount">Our collection</p>
+        <select id="sortProducts" aria-label="Sort products">
+          <option value="default">Sort by: Default</option>
+          <option value="low">Price: Low to High</option>
+          <option value="high">Price: High to Low</option>
+          <option value="name">Name: A to Z</option>
+        </select>
+      </div>
+
+      <div class="product-grid" id="productGrid"></div>
+
+      <p class="empty-message" id="emptyMessage" hidden>
+        No products found. Try another search.
+      </p>
+    </section>
+
+    <!-- About -->
+    <section class="about-section section-padding" id="about">
+      <div class="about-image">
+        <img
+          src="https://images.unsplash.com/photo-1591561954557-26941169b49e?w=900"
+          alt="JanoluxBag fashion collection"
+        >
+      </div>
+      <div class="about-content">
+        <span class="eyebrow">OUR STORY</span>
+        <h2>Style Made Personal</h2>
+        <p>
+          JanoluxBag is a fashion brand focused on stylish and
+          elegant bags for modern women. We bring together
+          beautiful designs and everyday functionality to help
+          you express your unique style.
+        </p>
+        <a href="#shop" class="btn-primary">Discover More</a>
+      </div>
+    </section>
+
+    <!-- Newsletter / Contact -->
+    <section class="newsletter section-padding" id="contact">
+      <span class="eyebrow">STAY IN STYLE</span>
+      <h2>Be Part of Our Fashion Community</h2>
+      <p>Explore our collection and discover your next favorite accessory.</p>
+      <a href="#shop" class="btn-primary">Shop Now</a> </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-brand">
+      <a href="index.html" class="logo">JANO<span>LUX</span>BAG</a>
+      <p>Elegance, quality and style in every detail.</p>
+    </div>
+
+    <div class="footer-links">
+      <a href="index.html">Home</a>
+      <a href="#shop">Shop</a>
+      <a href="#about">About Us</a>
+      <a href="#contact">Contact</a>
+    </div>
+
+    <p class="copyright">
+      &copy; <span id="year"></span> JanoluxBag. All rights reserved.
+    </p>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>
