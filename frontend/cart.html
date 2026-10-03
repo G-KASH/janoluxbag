@@ -1,0 +1,105 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shopping Cart | JANOLUXBAG</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/cart.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+</head>
+<body>
+  <div class="announcement">
+    Discover elegance with JanoluxBag
+  </div>
+
+  <header class="navbar">
+    <a href="index.html" class="logo">JANO<span>LUX</span>BAG</a>
+
+    <nav class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="index.html#shop">Shop</a>
+      <a href="index.html#about">About</a>
+      <a href="index.html#contact">Contact</a>
+    </nav>
+
+    <div class="nav-actions">
+      <a href="cart.html" class="cart-link" aria-label="Shopping cart">
+        <i class="fas fa-shopping-bag"></i>
+        <span id="cartCount">0</span>
+      </a>
+    </div>
+  </header>
+
+  <main class="cart-page">
+    <div class="cart-heading">
+      <span class="eyebrow">YOUR SELECTION</span>
+      <h1>Shopping Cart</h1>
+      <p>Review your selected items before checkout.</p>
+    </div>
+
+    <div class="cart-layout">
+      <section class="cart-items-section">
+        <div class="cart-items-heading">
+          <h2>Your Items</h2>
+          <span id="itemCount">0 items</span>
+        </div>
+
+        <div id="cartItems"></div>
+
+        <div class="continue-shopping">
+          <a href="index.html#shop">
+            <i class="fas fa-arrow-left"></i>
+            Continue Shopping
+          </a>
+        </div>
+      </section>
+
+      <aside class="cart-summary">
+        <h2>Order Summary</h2>
+
+        <div class="summary-line">
+          <span>Subtotal</span>
+          <strong id="cartSubtotal">KSh 0</strong>
+        </div>
+
+        <div class="summary-line">
+          <span>Delivery</span>
+          <span>Calculated at checkout</span>
+        </div>
+
+        <div class="summary-total">
+          <span>Total</span>
+          <strong id="cartTotal">KSh 0</strong>
+        </div>
+
+        <button id="checkoutBtn" class="checkout-btn">
+          Proceed to Checkout
+          <i class="fas fa-arrow-right"></i>
+        </button>
+
+        <p class="cart-note">
+          <i class="fas fa-lock"></i>
+          Secure checkout coming soon
+        </p>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-brand">
+      <a href="index.html" class="logo">JANO<span>LUX</span>BAG</a>
+      <p>Elegance, quality and style in every detail.</p>
+    </div>
+
+    <p class="copyright">
+      &copy; <span id="year"></span> JanoluxBag. All rights reserved.
+    </p>
+  </footer>
+
+  <script src="js/cart.js"></script>
+</body>
+</html>

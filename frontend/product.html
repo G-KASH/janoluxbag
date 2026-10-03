@@ -1,0 +1,69 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Product Details | JANOLUXBAG</title>
+
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/product.css">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+</head>
+<body>
+  <div class="announcement">
+    Discover elegance with JanoluxBag
+  </div>
+
+  <header class="navbar">
+    <a href="index.html" class="logo">JANO<span>LUX</span>BAG</a>
+
+    <nav class="nav-links" id="navLinks">
+      <a href="index.html">Home</a>
+      <a href="index.html#shop">Shop</a>
+      <a href="index.html#about">About</a>
+      <a href="index.html#contact">Contact</a>
+    </nav>
+
+    <div class="nav-actions">
+      <a href="cart.html" class="cart-link" aria-label="Shopping cart">
+        <i class="fas fa-shopping-bag"></i>
+        <span id="cartCount">0</span>
+      </a>
+      <button class="menu-toggle" id="menuToggle" aria-label="Toggle navigation">
+        <i class="fas fa-bars"></i>
+      </button>
+    </div>
+  </header>
+
+  <main class="product-page">
+    <div class="breadcrumb">
+      <a href="index.html">Home</a>
+      <i class="fas fa-chevron-right"></i>
+      <a href="index.html#shop">Shop</a>
+      <i class="fas fa-chevron-right"></i>
+      <span id="breadcrumbName">Product</span>
+    </div>
+
+    <section id="productDetails" class="product-details">
+      <p>Loading product...</p>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-brand">
+      <a href="index.html" class="logo">JANO<span>LUX</span>BAG</a>
+      <p>Elegance, quality and style in every detail.</p>
+    </div>
+
+    <p class="copyright">
+      &copy; <span id="year"></span> JanoluxBag. All rights reserved.
+    </p>
+  </footer>
+
+  <script src="js/product.js"></script>
+</body>
+</html>
