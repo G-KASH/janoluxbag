@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JANOLUXBAG | Manage Products</title>
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body class="dashboard-page">
+
+  <div class="admin-layout">
+
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-logo">JANOLUX<span>BAG</span></div>
+
+      <div class="sidebar-menu">
+        <p class="menu-label">MAIN MENU</p>
+
+        <a href="dashboard.html" class="sidebar-link">
+          <span>▦</span> Dashboard
+        </a>
+
+        <a href="products.html" class="sidebar-link active">
+          <span>▣</span> Manage Products
+        </a>
+
+        <a href="add-product.html" class="sidebar-link">
+          <span>＋</span> Add Product
+        </a>
+
+        <p class="menu-label">STORE</p>
+
+        <a href="../index.html" target="_blank" class="sidebar-link">
+          <span>⌂</span> Visit Store
+        </a>
+      </div>
+
+      <button id="logoutBtn" class="logout-btn">⇥ Logout</button>
+    </aside>
+
+    <main class="dashboard-main">
+
+      <header class="topbar">
+        <button class="menu-toggle" id="menuToggle">☰</button>
+
+        <div>
+          <h2>Manage Products</h2>
+          <p>View and manage your store inventory.</p>
+        </div>
+
+        <div class="admin-profile">
+          <div class="profile-avatar">A</div>
+          <div>
+            <strong>Administrator</strong>
+            <small>Store Manager</small>
+          </div>
+        </div>
+      </header>
+
+      <section class="dashboard-content">
+
+        <div class="welcome-section">
+          <div>
+            <h1>Product Inventory</h1>
+            <p>Manage all products available in your store.</p>
+          </div>
+
+          <a href="add-product.html" class="primary-action">
+            + Add New Product
+          </a>
+        </div>
+
+        <section class="products-panel">
+
+          <div class="products-toolbar">
+            <div class="search-box">
+              <input
+                type="search"
+                id="productSearch"
+                placeholder="Search products..."
+                aria-label="Search products"
+              >
+            </div>
+
+            <select id="categoryFilter" aria-label="Filter by category">
+              <option value="">All Categories</option>
+              <option value="Handbags">Handbags</option>
+              <option value="Shoulder Bags">Shoulder Bags</option>
+              <option value="Crossbody Bags">Crossbody Bags</option>
+              <option value="Tote Bags">Tote Bags</option>
+              <option value="Clutches">Clutches</option>
+              <option value="Backpacks">Backpacks</option>
+              <option value="Caps">Caps</option>
+              <option value="Hats">Hats</option>
+              <option value="Capes">Capes</option>
+              <option value="Belts">Belts</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <div class="inventory-summary">
+            <span id="productCount">0 products</span>
+            <span id="inventoryMessage"></span>
+          </div>
+
+          <div class="table-wrapper">
+            <table class="admin-table inventory-table">
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>Category</th>
+                  <th>Price</th>
+                  <th>Stock</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+
+              <tbody id="productsTableBody">
+                <tr>
+                  <td colspan="6" class="empty-state">
+                    Loading products...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div id="emptyProducts" class="empty-products" hidden>
+            <div class="empty-products-icon">▣</div>
+            <h3>No products found</h3>
+            <p>Try another search or add a new product to your inventory.</p>
+            <a href="add-product.html" class="primary-action">
+              Add Your First Product
+            </a>
+          </div>
+
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <script src="js/products.js"></script>
+</body>
+</html>

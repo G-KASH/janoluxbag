@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JANOLUXBAG | Edit Product</title>
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body class="dashboard-page">
+
+  <div class="admin-layout">
+
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-logo">JANOLUX<span>BAG</span></div>
+
+      <div class="sidebar-menu">
+        <p class="menu-label">MAIN MENU</p>
+
+        <a href="dashboard.html" class="sidebar-link">
+          <span>▦</span> Dashboard
+        </a>
+
+        <a href="products.html" class="sidebar-link active">
+          <span>▣</span> Manage Products
+        </a>
+
+        <a href="add-product.html" class="sidebar-link">
+          <span>＋</span> Add Product
+        </a>
+
+        <p class="menu-label">STORE</p>
+
+        <a href="../index.html" target="_blank" class="sidebar-link">
+          <span>⌂</span> Visit Store
+        </a>
+      </div>
+
+      <button id="logoutBtn" class="logout-btn">⇥ Logout</button>
+    </aside>
+
+    <main class="dashboard-main">
+
+      <header class="topbar">
+        <button class="menu-toggle" id="menuToggle">☰</button>
+
+        <div>
+          <h2>Edit Product</h2>
+          <p>Update your product information.</p>
+        </div>
+
+        <div class="admin-profile">
+          <div class="profile-avatar">A</div>
+          <div>
+            <strong>Administrator</strong>
+            <small>Store Manager</small>
+          </div>
+        </div>
+      </header>
+
+      <section class="dashboard-content">
+
+        <div class="welcome-section">
+          <div>
+            <h1>Update Product</h1>
+            <p>Edit the details of your selected product.</p>
+          </div>
+
+          <a href="products.html" class="secondary-action">
+            Back to Products
+          </a>
+        </div>
+
+        <form id="editProductForm" class="product-form">
+
+          <div class="form-section">
+            <h2>Product Information</h2>
+            <p class="section-description">
+              Update the product details below.
+            </p>
+
+            <div class="admin-form-grid">
+
+              <div class="admin-field full-width">
+                <label for="productName">Product Name *</label>
+                <input type="text" id="productName" required>
+              </div>
+
+              <div class="admin-field">
+                <label for="productCategory">Category *</label>
+                <select id="productCategory" required>
+                  <option value="">Select category</option>
+                  <option value="Handbags">Handbags</option>
+                  <option value="Shoulder Bags">Shoulder Bags</option>
+                  <option value="Crossbody Bags">Crossbody Bags</option>
+                  <option value="Tote Bags">Tote Bags</option>
+                  <option value="Clutches">Clutches</option>
+                  <option value="Backpacks">Backpacks</option>
+                  <option value="Caps">Caps</option>
+                  <option value="Hats">Hats</option>
+                  <option value="Capes">Capes</option>
+                  <option value="Belts">Belts</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              <div class="admin-field">
+                <label for="productPrice">Price (KSh) *</label>
+                <input type="number" id="productPrice" min="0" step="1" required>
+              </div>
+
+              <div class="admin-field">
+                <label for="productStock">Stock Quantity *</label>
+                <input type="number" id="productStock" min="0" step="1" required>
+              </div>
+
+              <div class="admin-field full-width">
+                <label for="productDescription">Description *</label>
+                <textarea id="productDescription" rows="5" required></textarea>
+              </div>
+
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h2>Product Images</h2>
+            <p class="section-description">
+              Keep your current images or replace them.
+            </p>
+
+            <div class="admin-field">
+              <label>Current Main Image</label>
+              <div id="currentMainPreview" class="image-preview"></div>
+            </div>
+
+            <div class="admin-field">
+              <label for="mainImage">Replace Main Image</label>
+              <input type="file" id="mainImage" accept="image/*">
+              <small class="field-hint">Leave empty to keep the current image. Maximum 1 MB.</small>
+              <div id="newMainPreview" class="image-preview"></div>
+            </div>
+
+            <div class="admin-field">
+              <label>Current Additional Images</label>
+              <div id="currentExtraPreview" class="image-preview-list"></div>
+            </div>
+
+            <div class="admin-field">
+              <label for="extraImages">Add More Images</label>
+              <input type="file" id="extraImages" accept="image/*" multiple>
+              <small class="field-hint">You can add up to 4 new images. Existing images will be kept.</small>
+              <div id="newExtraPreview" class="image-preview-list"></div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h2>Store Settings</h2>
+
+            <label class="featured-option">
+              <input type="checkbox" id="productFeatured">
+              <span>
+                <strong>Feature this product</strong>
+                <small>Display this product as a featured item.</small>
+              </span>
+            </label>
+          </div>
+
+          <div id="formMessage" class="form-message"></div>
+
+          <div class="form-actions">
+            <a href="products.html" class="cancel-btn">Cancel</a>
+            <button type="submit" class="save-product-btn">
+              Save Changes
+            </button>
+          </div>
+
+        </form>
+      </section>
+    </main>
+  </div>
+
+ <script src="js/edit-product.js"></script>
+</body>
+</html>
