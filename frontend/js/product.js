@@ -1,232 +1,257 @@
 
-const products = [
-  {
-    id: 1,
-    name: "Classic Luxury Handbag",
-    category: "Handbags",
-    price: 3500,
-    image: "https://images.unsplash.com/photo-1590874103328-eac38a683ce7?w=900",
-    description: "A timeless and elegant handbag designed for everyday sophistication. Its versatile design makes it suitable for work, casual outings and special occasions.",
-    features: [
-      "Elegant and modern design",
-      "Spacious main compartment",
-      "Comfortable carrying handles",
-      "Suitable for everyday use"
-    ],
-    stock: 25
-  },
-  {
-    id: 2,
-    name: "Elegant Shoulder Bag",
-    category: "Shoulder Bags",
-    price: 2800,
-    image: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=900",
-    description: "A fashionable shoulder bag that combines beauty and functionality. A versatile accessory for everyday fashion.",
-    features: [
-      "Stylish shoulder design",
-      "Practical storage space",
-      "Lightweight construction",
-      "Suitable for everyday occasions"
-    ],
-    stock: 18
-  },
-  {
-    id: 3,
-    name: "Premium Crossbody Bag",
-    category: "Crossbody Bags",
-    price: 2500,
-    image: "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=900",
-    description: "A compact and stylish crossbody bag that keeps your essentials close while complementing your everyday look.",
-    features: [
-      "Compact and practical design",
-      "Adjustable shoulder strap",
-      "Convenient storage compartment",
-      "Ideal for casual outings"
-    ],
-    stock: 30
-  },
-  {
-    id: 4,
-    name: "Luxury Tote Bag",
-    category: "Tote Bags",
-    price: 4000,
-    image: "https://images.unsplash.com/photo-1591561954557-26941169b49e?w=900",
-    description: "A spacious tote bag designed for those who appreciate both style and functionality. Perfect for shopping, work and daily use.",
-    features: [
-      "Spacious interior",
-      "Elegant silhouette",
-      "Comfortable carrying handles",
-      "Versatile everyday accessory"
-    ],
-    stock: 12
-  },
-  {
-    id: 5,
-    name: "Elegant Evening Bag",
-    category: "Handbags",
-    price: 3200,
-    image: "https://images.unsplash.com/photo-1566150905458-1bf1fc113f0d?w=900",
-    description: "An elegant bag for dinners, celebrations and special occasions. Add a refined touch to your evening outfit.",
-    features: [
-      "Sophisticated appearance",
-      "Compact storage space",
-      "Elegant evening styling",
-      "Suitable for special occasions"
-    ],
-    stock: 10
-  },
-  {
-    id: 6,
-    name: "Classic Crossbody",
-    category: "Crossbody Bags",
-    price: 2700,
-    image: "https://images.unsplash.com/photo-1591561954557-26941169b49e?w=900",
-    description: "A classic crossbody accessory that offers a balance of convenience and timeless style.",
-    features: [
-      "Classic styling",
-      "Hands-free carrying",
-      "Compact everyday storage",
-      "Easy to pair with different outfits"
-    ],
-    stock: 20
+document.addEventListener("DOMContentLoaded", () => {
+  const productDetails = document.getElementById("productDetails");
+  const breadcrumbName = document.getElementById("breadcrumbName");
+  const cartCount = document.getElementById("cartCount");
+  const year = document.getElementById("year");
+
+  const products = JSON.parse(
+    localStorage.getItem("janoluxProducts") || "[]"
+  );
+
+  let cart = JSON.parse(
+    localStorage.getItem("janoluxCart") || "[]"
+  );
+
+  const params = new URLSearchParams(window.location.search);
+  const productId = params.get("id");
+
+  const product = products.find(
+    item => String(item.id) === String(productId)
+  );
+
+  if (year) {
+    year.textContent = new Date().getFullYear();
   }
-];
 
-const detailsContainer = document.getElementById("productDetails");
-const productId = Number(new URLSearchParams(window.location.search).get("id"));
-const product = products.find(item => item.id === productId);
-
-let selectedQuantity = 1;
-
-function formatPrice(price) {
-  return `KSh ${price.toLocaleString("en-KE")}`;
-}
-
-function getCart() {
-  try {
-    const data = JSON.parse(localStorage.getItem("janoluxCart"));
-    return Array.isArray(data) ? data : [];
-  } catch {
-    return [];
+  function updateCartCount() {
+    if (cartCount) {
+      cartCount.textContent = cart.reduce(
+        (total, item) => total + Number(item.quantity || 1),
+        0
+      );
+    }
   }
-}
 
-function updateCartCount() {
-  const cart = getCart();
-  const count = cart.reduce((sum, item) => sum + item.quantity, 0);
-  document.getElementById("cartCount").textContent = count;
-}
+  updateCartCount();
 
-function showProduct() {
   if (!product) {
-    detailsContainer.innerHTML = `
+    breadcrumbName.textContent = "Product not found";
+
+    productDetails.innerHTML = `
       <div class="product-not-found">
+        <i class="fas fa-bag-shopping"></i>
         <h2>Product Not Found</h2>
-        <p>The product you're looking for does not exist.</p>
-        <a href="index.html#shop">Return to Shop</a>
+        <p>This product may have been removed or the link is incorrect.</p>
+        <a href="index.html#shop" class="btn-primary">
+          Continue Shopping
+        </a>
       </div>
     `;
     return;
   }
 
-  document.title = `${product.name} | JANOLUXBAG`;
-  document.getElementById("breadcrumbName").textContent = product.name;
+  const price = Number(product.price) || 0;
+  const stock = Math.max(0, Number(product.stock) || 0);
 
-  const features = product.features
-    .map(feature => `<li>${feature}</li>`)
-    .join("");
+  const images = [
+    product.image,
+    ...(Array.isArray(product.images) ? product.images : [])
+  ].filter(image => typeof image === "string" && image.trim() !== "");
 
-  detailsContainer.innerHTML = `
-    <div class="detail-image">
-      <img src="${product.image}" alt="${product.name}">
-    </div>
+  let activeImage = images[0] || "";
 
-    <div class="detail-info">
-      <p class="detail-category">${product.category}</p>
-      <h1>${product.name}</h1>
-      <p class="detail-price">${formatPrice(product.price)}</p>
+  breadcrumbName.textContent = product.name || "Product";
+  document.title = `${product.name || "Product"} | JANOLUXBAG`;
 
-      <p class="detail-description">${product.description}</p>
+  function escapeHTML(value) {
+    return String(value ?? "").replace(/[&<>"']/g, character => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#039;"
+    })[character]);
+  }
 
-      <h3>Product Features</h3>
-      <ul class="detail-features">
-        ${features}
-      </ul>
-
-      <p class="stock-status ${product.stock === 0 ? "out-of-stock" : ""}">
-        ${product.stock > 0
-          ? `${product.stock} items available`
-          : "Out of stock"}
-      </p>
-
-      <div class="detail-actions">
-        <div class="detail-quantity">
-          <button type="button" id="decreaseQuantity" aria-label="Decrease quantity">−</button>
-          <span id="selectedQuantity">1</span>
-          <button type="button" id="increaseQuantity" aria-label="Increase quantity">+</button>
+  function renderProduct() {
+    productDetails.innerHTML = `
+      <div class="product-gallery">
+        <div class="main-image-container">
+          ${
+            activeImage
+              ? `<img
+                   src="${activeImage}"
+                   alt="${escapeHTML(product.name)}"
+                   class="main-product-image"
+                   id="mainProductImage"
+                 >`
+              : `<div class="no-product-image">
+                   <i class="fas fa-image"></i>
+                   <p>No image available</p>
+                 </div>`
+          }
         </div>
 
-        <button type="button" class="detail-add-cart" id="addProductToCart"
-          ${product.stock === 0 ? "disabled" : ""}>
-          <i class="fas fa-shopping-bag"></i>
-          Add to Cart
-        </button>
+        ${
+          images.length > 1
+            ? `<div class="product-thumbnails">
+                ${images.map((image, index) => `
+                  <button
+                    type="button"
+                    class="thumbnail ${image === activeImage ? "active" : ""}"
+                    data-image-index="${index}"
+                    aria-label="View product image ${index + 1}"
+                  >
+                    <img src="${image}" alt="${escapeHTML(product.name)} image ${index + 1}">
+                  </button>
+                `).join("")}
+              </div>`
+            : ""
+        }
       </div>
-    </div>
-  `;
 
-  const quantityDisplay = document.getElementById("selectedQuantity");
+      <div class="product-information">
+        <p class="product-category">
+          ${escapeHTML(product.category || "Fashion")}
+        </p>
 
-  document.getElementById("decreaseQuantity").addEventListener("click", () => {
-    if (selectedQuantity > 1) {
-      selectedQuantity--;
-      quantityDisplay.textContent = selectedQuantity;
-    }
-  });
+        ${product.featured ? `<span class="featured-label">Featured Product</span>` : ""}
 
-  document.getElementById("increaseQuantity").addEventListener("click", () => {
-    if (selectedQuantity < product.stock) {
-      selectedQuantity++;
-      quantityDisplay.textContent = selectedQuantity;
-    }
-  });
+        <h1>${escapeHTML(product.name || "Unnamed Product")}</h1>
 
-  document.getElementById("addProductToCart").addEventListener("click", addToCart);
-}
+        <p class="detail-price">KSh ${price.toLocaleString("en-KE")}</p>
 
-function addToCart() {
-  const cart = getCart();
-  const existing = cart.find(item => item.id === product.id);
-  const existingQuantity = existing ? existing.quantity : 0;
+        <p class="detail-stock ${stock > 0 ? "in-stock" : "out-of-stock"}">
+          ${stock > 0 ? `${stock} available in stock` : "Currently out of stock"}
+        </p>
 
-  if (existingQuantity + selectedQuantity > product.stock) {
-    alert("The selected quantity exceeds the available sample stock.");
-    return;
-  }
+        <div class="detail-description">
+          <h3>Product Description</h3>
+          <p>${escapeHTML(product.description || "Contact us for more information about this product.")}</p>
+        </div>
 
-  if (existing) {
-    existing.quantity += selectedQuantity;
-  } else {
-    cart.push({
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      image: product.image,
-      quantity: selectedQuantity
+        <div class="quantity-control">
+          <label for="quantity">Quantity</label>
+          <div class="quantity-buttons">
+            <button type="button" id="decreaseQuantity" aria-label="Decrease quantity">−</button>
+            <input
+              type="number"
+              id="quantity"
+              value="1"
+              min="1"
+              max="${stock}"
+              ${stock === 0 ? "disabled" : ""}
+            >
+            <button type="button" id="increaseQuantity" aria-label="Increase quantity" ${stock === 0 ? "disabled" : ""}>+</button>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          id="addToCartBtn"
+          class="btn-primary add-to-cart-btn"
+          ${stock === 0 ? "disabled" : ""}
+        >
+          <i class="fas fa-shopping-bag"></i>
+          ${stock > 0 ? "Add to Cart" : "Out of Stock"}
+        </button>
+
+        <div id="productMessage" class="product-message" role="status"></div>
+
+        <div class="product-benefits">
+          <p><i class="fas fa-check-circle"></i> Quality fashion accessories</p>
+          <p><i class="fas fa-truck"></i> Contact us for delivery details</p>
+          <p><i class="fas fa-shield-alt"></i> Shop with confidence</p>
+        </div>
+      </div>
+    `;
+
+    const quantityInput = document.getElementById("quantity");
+
+    document.getElementById("decreaseQuantity")?.addEventListener("click", () => {
+      quantityInput.value = Math.max(1, Number(quantityInput.value || 1) - 1);
     });
+
+    document.getElementById("increaseQuantity")?.addEventListener("click", () => {
+      quantityInput.value = Math.min(
+        stock,
+        Number(quantityInput.value || 1) + 1
+      );
+    });
+
+    quantityInput?.addEventListener("change", () => {
+      let quantity = Number.parseInt(quantityInput.value, 10);
+
+      if (!Number.isFinite(quantity)) quantity = 1;
+
+      quantityInput.value = Math.min(stock, Math.max(1, quantity));
+    });
+
+    document.querySelectorAll(".thumbnail").forEach(button => {
+      button.addEventListener("click", () => {
+        const index = Number(button.dataset.imageIndex);
+        activeImage = images[index];
+        renderProduct();
+      });
+    });
+
+    document.getElementById("addToCartBtn")?.addEventListener("click", addToCart);
   }
 
-  localStorage.setItem("janoluxCart", JSON.stringify(cart));
-  updateCartCount();
+  function addToCart() {
+    const quantityInput = document.getElementById("quantity");
+    const message = document.getElementById("productMessage");
+    const quantity = Number.parseInt(quantityInput.value, 10);
 
-  alert(`${product.name} added to your cart!`);
-}
+    if (!Number.isInteger(quantity) || quantity < 1) {
+      message.textContent = "Please enter a valid quantity.";
+      return;
+    }
 
-document.getElementById("menuToggle").addEventListener("click", () => {
-  document.getElementById("navLinks").classList.toggle("open");
+    if (quantity > stock) {
+      message.textContent = `Only ${stock} item(s) are available.`;
+      return;
+    }
+
+    const existingItem = cart.find(
+      item => String(item.id) === String(product.id)
+    );
+
+    const alreadyInCart = existingItem
+      ? Number(existingItem.quantity || 0)
+      : 0;
+
+    if (alreadyInCart + quantity > stock) {
+      message.textContent = `You can only add ${Math.max(0, stock - alreadyInCart)} more item(s) to your cart.`;
+      return;
+    }
+
+    if (existingItem) {
+      existingItem.quantity = alreadyInCart + quantity;
+    } else {
+      cart.push({
+        id: product.id,
+        name: product.name,
+        price: price,
+        image: product.image || "",
+        quantity: quantity
+      });
+    }
+
+    localStorage.setItem("janoluxCart", JSON.stringify(cart));
+    updateCartCount();
+
+    message.textContent = "Product added to your cart successfully.";
+  }
+
+  renderProduct();
+
+  // Mobile navigation
+  const menuToggle = document.getElementById("menuToggle");
+  const navLinks = document.getElementById("navLinks");
+
+  menuToggle?.addEventListener("click", () => {
+    navLinks?.classList.toggle("active");
+  });
 });
-
-document.getElementById("year").textContent = new Date().getFullYear();
-
-showProduct();
-updateCartCount();

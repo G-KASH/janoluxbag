@@ -1,0 +1,216 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checkout | JANOLUXBAG</title>
+
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/checkout.css">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+</head>
+<body>
+  <div class="announcement">
+    Discover elegance with JanoluxBag
+  </div>
+
+  <header class="navbar">
+    <a href="index.html" class="logo">JANO<span>LUX</span>BAG</a>
+
+    <nav class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="index.html#shop">Shop</a>
+      <a href="cart.html">Cart</a>
+    </nav>
+
+    <div class="nav-actions">
+      <a href="cart.html" class="cart-link" aria-label="Shopping cart">
+        <i class="fas fa-shopping-bag"></i>
+        <span id="cartCount">0</span>
+      </a>
+    </div>
+  </header>
+
+  <main class="checkout-page">
+    <div class="checkout-heading">
+      <span class="eyebrow">ALMOST YOURS</span>
+      <h1>Checkout</h1>
+      <p>Enter your details to complete your order.</p>
+    </div>
+
+    <div id="checkoutMessage" role="status"></div>
+
+    <div class="checkout-layout">
+      <section class="checkout-form-section">
+        <form id="checkoutForm">
+          <fieldset>
+            <legend><i class="fas fa-user"></i> Customer Information</legend>
+
+            <div class="form-group">
+              <label for="fullName">Full Name *</label>
+              <input
+                type="text"
+                id="fullName"
+                name="fullName"
+                autocomplete="name"
+                placeholder="Enter your full name"
+                required
+                minlength="2"
+                maxlength="100"
+              >
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="phone">Phone Number *</label>
+                <input
+                  type="tel"
+                  id="phone"
+                  name="phone"
+                  autocomplete="tel"
+                  placeholder="07XXXXXXXX"
+                  required
+                  pattern="(?:\\+254|254|0)?[17][0-9]{8}"
+                  title="Enter a valid Kenyan mobile number"
+                >
+              </div>
+
+              <div class="form-group">
+                <label for="email">Email Address</label>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  autocomplete="email"
+                  placeholder="you@example.com"
+                  maxlength="150"
+                >
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend><i class="fas fa-truck"></i> Delivery Information</legend>
+
+            <div class="form-group">
+              <label for="county">County *</label>
+              <input
+                type="text"
+                id="county"
+                name="county"
+                placeholder="e.g. Nairobi"
+                required
+                maxlength="100"
+              >
+            </div>
+
+            <div class="form-group">
+              <label for="deliveryAddress">Delivery Address *</label>
+              <textarea
+                id="deliveryAddress"
+                name="deliveryAddress"
+                rows="3"
+                placeholder="Enter your area, estate, building or collection point"
+                required
+                minlength="5"
+                maxlength="500"
+              ></textarea>
+            </div>
+
+            <div class="form-group">
+              <label for="deliveryNotes">Additional Instructions (Optional)</label>
+              <textarea
+                id="deliveryNotes"
+                name="deliveryNotes"
+                rows="2"
+                placeholder="Any helpful delivery instructions"
+                maxlength="500"
+              ></textarea>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend><i class="fas fa-wallet"></i> Payment Method</legend>
+
+            <label class="payment-option">
+              <input
+                type="radio"
+                name="paymentMethod"
+                value="cash_on_delivery"
+                checked
+              >
+              <span>
+                <strong>Cash on Delivery / Collection</strong>
+                <small>Payment arrangements will be confirmed by the shop.</small>
+              </span>
+            </label>
+
+            <label class="payment-option">
+              <input
+                type="radio"
+                name="paymentMethod"
+                value="mpesa"
+              >
+              <span>
+                <strong>M-Pesa</strong>
+                <small>M-Pesa payment will be enabled after integration.</small>
+              </span>
+            </label>
+          </fieldset>
+
+          <button type="submit" id="placeOrderBtn" class="place-order-btn">
+            Place Order <i class="fas fa-arrow-right"></i>
+          </button>
+
+          <p class="checkout-disclaimer">
+            Your order will be submitted for shop confirmation.
+            Payment is not processed by this page.
+          </p>
+        </form>
+      </section>
+
+      <aside class="checkout-summary">
+        <h2>Your Order</h2>
+
+        <div id="checkoutItems"></div>
+
+        <div class="summary-line">
+          <span>Subtotal</span>
+          <strong id="checkoutSubtotal">KSh 0</strong>
+        </div>
+
+        <div class="summary-line">
+          <span>Delivery</span>
+          <span>To be confirmed</span>
+        </div>
+
+        <div class="summary-total">
+          <span>Total before delivery</span>
+          <strong id="checkoutTotal">KSh 0</strong>
+        </div>
+
+        <a href="cart.html" class="back-to-cart">
+          <i class="fas fa-arrow-left"></i> Return to Cart
+        </a>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-brand">
+      <a href="index.html" class="logo">JANO<span>LUX</span>BAG</a>
+      <p>Elegance, quality and style in every detail.</p>
+    </div>
+
+    <p class="copyright">
+      &copy; <span id="year"></span> JanoluxBag. All rights reserved.
+    </p>
+  </footer>
+
+  <script src="js/checkout.js"></script>
+</body>
+</html>
