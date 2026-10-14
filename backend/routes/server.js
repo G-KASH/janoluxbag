@@ -8,22 +8,25 @@ dotenv.config();
 const connectDB = require("./config/db");
 const productRoutes = require("./routes/productRoutes");
 const mpesaRoutes = require("./routes/mpesaRoutes");
+const orderRoutes = require("./routes/orderRoutes");
 
 const app = express();
 
-connectDB();
-
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 app.get("/", (req, res) => {
   res.json({
-    message: "JanoluxBag API is running",
+    message: "JanoluxBag API is running"
   });
 });
 
 app.use("/api/products", productRoutes);
 app.use("/api/mpesa", mpesaRoutes);
+app.use("/api/orders", orderRoutes);
+
+connectDB();
 
 const PORT = process.env.PORT || 5000;
 
