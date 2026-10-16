@@ -3,7 +3,8 @@ const express = require("express");
 
 const router = express.Router();
 
-console.log("JANOLUXBAG MPESA ROUTE LOADED - VERSION 2");
+console.log("JANOLUXBAG MPESA ROUTE LOADED - VERSION 3");
+
 const SANDBOX_URL = "https://sandbox.safaricom.co.ke";
 
 function getTimestamp() {
@@ -52,14 +53,16 @@ function normalizePhone(phone) {
   return value;
 }
 
-
 async function getAccessToken() {
   const key = process.env.DARAJA_CONSUMER_KEY;
   const secret = process.env.DARAJA_CONSUMER_SECRET;
 
-  if (!key || !secret ||
-      key === "YOUR_CONSUMER_KEY" ||
-      secret === "YOUR_CONSUMER_SECRET") {
+  if (
+    !key ||
+    !secret ||
+    key === "YOUR_CONSUMER_KEY" ||
+    secret === "YOUR_CONSUMER_SECRET"
+  ) {
     throw new Error(
       "Enter your actual Daraja Sandbox Consumer Key and Consumer Secret in .env."
     );
@@ -67,10 +70,8 @@ async function getAccessToken() {
 
   const credentials = Buffer.from(`${key}:${secret}`).toString("base64");
 
-  console.log("Requesting Daraja Sandbox access token...");
-
   const response = await fetch(
-    "https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials",
+    `${SANDBOX_URL}/oauth/v1/generate?grant_type=client_credentials`,
     {
       method: "GET",
       headers: {
@@ -81,21 +82,18 @@ async function getAccessToken() {
 
   const raw = await response.text();
 
-  console.log("Daraja token HTTP status:", response.status);
-  console.log("Daraja token response received:", raw.length > 0);
-
   let data;
 
   try {
     data = JSON.parse(raw);
   } catch {
     throw new Error(
-      `Daraja token response is empty or invalid JSON (HTTP ${response.status}).`
+      `Daraja token response was empty or invalid JSON (HTTP ${response.status}).`
     );
   }
 
   if (!response.ok || !data.access_token) {
-    console.error("Daraja token request was rejected:", {
+    console.error("Daraja token request failed:", {
       status: response.status,
       error: data.error,
       description: data.error_description,
@@ -110,8 +108,6 @@ async function getAccessToken() {
 
   return data.access_token;
 }
-
-
 
 router.post("/stkpush", async (req, res) => {
   try {
@@ -128,19 +124,35 @@ router.post("/stkpush", async (req, res) => {
       });
     }
 
-    if (!Number.isInteger(Number(amount)) ||
-        Number(amount) < 1 ||
-        Number(amount) > 250000) {
+    if (
+      !Number.isInteger(Number(amount)) ||
+      Number(amount) < 1 ||
+      Number(amount) > 250000
+    ) {
       return res.status(400).json({
         success: false,
         message: "Enter a valid whole-number test amount.",
       });
     }
 
-    if (!/^https:\/\//i.test(callbackUrl)) {
+    let parsedCallbackUrl;
+
+    try {
+      parsedCallbackUrl = new URL(callbackUrl);
+    } catch {
       return res.status(400).json({
         success: false,
-        message: "The callback URL must use HTTPS.",
+        message: "The callback URL is not a valid URL.",
+      });
+    }
+
+    if (
+      parsedCallbackUrl.protocol !== "https:" ||
+      parsedCallbackUrl.hostname === "localhost"
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "The callback URL must be a public HTTPS URL.",
       });
     }
 
@@ -156,7 +168,7 @@ router.post("/stkpush", async (req, res) => {
     console.log("Sending STK request to Daraja Sandbox...");
 
     const response = await fetch(
-      "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest",
+      `${SANDBOX_URL}/mpesa/stkpush/v1/processrequest`,
       {
         method: "POST",
         headers: {
@@ -181,19 +193,17 @@ router.post("/stkpush", async (req, res) => {
 
     const raw = await response.text();
 
-    console.log("Daraja STK HTTP status:", response.status);
-    console.log("Daraja STK response received:", raw.length > 0);
-
     let data;
 
     try {
       data = JSON.parse(raw);
     } catch {
       throw new Error(
-        `Daraja returned empty or invalid JSON for STK Push (HTTP ${response.status}).`
+        `Daraja STK response was empty or invalid JSON (HTTP ${response.status}).`
       );
     }
 
+    console.log("Daraja STK HTTP status:", response.status);
     console.log("Daraja STK response code:", data.ResponseCode);
     console.log("Daraja STK description:", data.ResponseDescription);
 
@@ -226,8 +236,6 @@ router.post("/stkpush", async (req, res) => {
   }
 });
 
-
-// Receives the result sent by Safaricom.
 router.post("/callback", (req, res) => {
   const callback = req.body?.Body?.stkCallback;
 
@@ -246,8 +254,7 @@ router.post("/callback", (req, res) => {
     metadata: callback.CallbackMetadata?.Item || [],
   });
 
-  // Do not mark an order as paid until the callback
-  // is verified and matched to a saved order.
+  // This example logs the callback only. It does not mark an order as paid.
   return res.json({
     ResultCode: 0,
     ResultDesc: "Callback received successfully",
