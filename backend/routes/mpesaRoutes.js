@@ -3,6 +3,7 @@ const express = require("express");
 
 const router = express.Router();
 
+console.log("JANOLUXBAG MPESA ROUTE LOADED - VERSION 2");
 const SANDBOX_URL = "https://sandbox.safaricom.co.ke";
 
 function getTimestamp() {
@@ -51,37 +52,66 @@ function normalizePhone(phone) {
   return value;
 }
 
+
 async function getAccessToken() {
   const key = process.env.DARAJA_CONSUMER_KEY;
   const secret = process.env.DARAJA_CONSUMER_SECRET;
 
-  if (!key || !secret) {
-    throw new Error("Daraja credentials are missing.");
+  if (!key || !secret ||
+      key === "YOUR_CONSUMER_KEY" ||
+      secret === "YOUR_CONSUMER_SECRET") {
+    throw new Error(
+      "Enter your actual Daraja Sandbox Consumer Key and Consumer Secret in .env."
+    );
   }
 
-  const credentials = Buffer.from(
-    `${key}:${secret}`
-  ).toString("base64");
+  const credentials = Buffer.from(`${key}:${secret}`).toString("base64");
+
+  console.log("Requesting Daraja Sandbox access token...");
 
   const response = await fetch(
-    `${SANDBOX_URL}/oauth/v1/generate?grant_type=client_credentials`,
+    "https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials",
     {
+      method: "GET",
       headers: {
         Authorization: `Basic ${credentials}`,
       },
     }
   );
 
-  const data = await response.json();
+  const raw = await response.text();
 
-  if (!response.ok || !data.access_token) {
+  console.log("Daraja token HTTP status:", response.status);
+  console.log("Daraja token response received:", raw.length > 0);
+
+  let data;
+
+  try {
+    data = JSON.parse(raw);
+  } catch {
     throw new Error(
-      "Could not obtain the Daraja access token."
+      `Daraja token response is empty or invalid JSON (HTTP ${response.status}).`
     );
   }
 
+  if (!response.ok || !data.access_token) {
+    console.error("Daraja token request was rejected:", {
+      status: response.status,
+      error: data.error,
+      description: data.error_description,
+    });
+
+    throw new Error(
+      "Daraja Sandbox authentication failed. Check your Consumer Key and Consumer Secret."
+    );
+  }
+
+  console.log("Daraja Sandbox access token obtained successfully.");
+
   return data.access_token;
 }
+
+
 
 router.post("/stkpush", async (req, res) => {
   try {
@@ -94,16 +124,13 @@ router.post("/stkpush", async (req, res) => {
     if (!shortcode || !passkey || !callbackUrl) {
       return res.status(500).json({
         success: false,
-        message:
-          "Configure the shortcode, passkey, and public callback URL first.",
+        message: "Missing shortcode, passkey, or callback URL in .env.",
       });
     }
 
-    if (
-      !Number.isInteger(Number(amount)) ||
-      Number(amount) < 1 ||
-      Number(amount) > 250000
-    ) {
+    if (!Number.isInteger(Number(amount)) ||
+        Number(amount) < 1 ||
+        Number(amount) > 250000) {
       return res.status(400).json({
         success: false,
         message: "Enter a valid whole-number test amount.",
@@ -126,8 +153,10 @@ router.post("/stkpush", async (req, res) => {
 
     const token = await getAccessToken();
 
+    console.log("Sending STK request to Daraja Sandbox...");
+
     const response = await fetch(
-      `${SANDBOX_URL}/mpesa/stkpush/v1/processrequest`,
+      "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest",
       {
         method: "POST",
         headers: {
@@ -145,26 +174,45 @@ router.post("/stkpush", async (req, res) => {
           PhoneNumber: formattedPhone,
           CallBackURL: callbackUrl,
           AccountReference: "JanoluxBag",
-          TransactionDesc: "JanoluxBag test order",
+          TransactionDesc: "JanoluxBag Sandbox test",
         }),
       }
     );
 
-    const data = await response.json();
+    const raw = await response.text();
+
+    console.log("Daraja STK HTTP status:", response.status);
+    console.log("Daraja STK response received:", raw.length > 0);
+
+    let data;
+
+    try {
+      data = JSON.parse(raw);
+    } catch {
+      throw new Error(
+        `Daraja returned empty or invalid JSON for STK Push (HTTP ${response.status}).`
+      );
+    }
+
+    console.log("Daraja STK response code:", data.ResponseCode);
+    console.log("Daraja STK description:", data.ResponseDescription);
 
     if (!response.ok || data.ResponseCode !== "0") {
       return res.status(400).json({
         success: false,
         message:
           data.errorMessage ||
+          data.errorMessageDescription ||
           data.ResponseDescription ||
           "Daraja rejected the STK Push request.",
       });
     }
 
-    return res.json({
+    return res.status(200).json({
       success: true,
-      message: "STK Push request accepted. Check the test phone.",
+      message:
+        data.CustomerMessage ||
+        "Daraja accepted the STK Push request.",
       checkoutRequestId: data.CheckoutRequestID,
       merchantRequestId: data.MerchantRequestID,
     });
@@ -177,6 +225,7 @@ router.post("/stkpush", async (req, res) => {
     });
   }
 });
+
 
 // Receives the result sent by Safaricom.
 router.post("/callback", (req, res) => {
