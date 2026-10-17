@@ -1,5 +1,7 @@
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+  const API_URL = "https://janoluxbag.onrender.com/api/products";
+
   const cartItemsContainer = document.getElementById("cartItems");
   const subtotalElement = document.getElementById("cartSubtotal");
   const totalElement = document.getElementById("cartTotal");
@@ -8,30 +10,27 @@ document.addEventListener("DOMContentLoaded", () => {
   const checkoutBtn = document.getElementById("checkoutBtn");
   const yearElement = document.getElementById("year");
 
+  let products = [];
+
   function readStorage(key, fallback = []) {
     try {
       const value = JSON.parse(localStorage.getItem(key) || "null");
       return value ?? fallback;
-    } catch {
+    } catch (error) {
+      console.error(`Could not read ${key}:`, error);
       return fallback;
     }
   }
 
-  function getProducts() {
-    const products = readStorage("janoluxProducts");
-    return Array.isArray(products) ? products : [];
-  }
+  function readCart() {
+    const cart = readStorage("janoluxCart");
+    if (!Array.isArray(cart)) return [];
 
-  function getCart() {
-    const storedCart = readStorage("janoluxCart");
-    if (!Array.isArray(storedCart)) return [];
-
-    return storedCart
+    return cart
       .filter(item =>
         item &&
         (typeof item.id === "string" || typeof item.id === "number") &&
         String(item.id).length > 0 &&
-        typeof item.name === "string" &&
         Number.isFinite(Number(item.price)) &&
         Number(item.price) >= 0 &&
         Number.isInteger(Number(item.quantity)) &&
@@ -40,6 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
       .map(item => ({
         ...item,
         id: String(item.id),
+        name: String(item.name || "JanoluxBag Product"),
         price: Number(item.price),
         quantity: Number(item.quantity),
         image: typeof item.image === "string" ? item.image : ""
@@ -51,28 +51,80 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function formatPrice(price) {
-    return `KSh ${Number(price).toLocaleString("en-KE")}`;
+    return `KSh ${Number(price || 0).toLocaleString("en-KE")}`;
+  }
+
+  function getProductId(product) {
+    return String(product?._id ?? product?.id ?? "");
   }
 
   function findProduct(cartItem) {
-    return getProducts().find(
-      product => String(product.id) === String(cartItem.id)
+    return products.find(
+      product => getProductId(product) === String(cartItem.id)
     );
+  }
+
+  function getDisplayItem(item) {
+    const product = findProduct(item);
+
+    // Use the latest product information from MongoDB when available.
+    if (!product) return item;
+
+    return {
+      ...item,
+      name: product.name || item.name,
+      price: Number.isFinite(Number(product.price))
+        ? Number(product.price)
+        : item.price,
+      image: product.image || item.image,
+      stock: product.stock
+    };
   }
 
   function createElement(tag, className, text) {
     const element = document.createElement(tag);
-
     if (className) element.className = className;
     if (text !== undefined) element.textContent = text;
-
     return element;
   }
 
-  function updateCart() {
-    const cart = getCart();
-    saveCart(cart);
+  async function loadProducts() {
+    try {
+      const response = await fetch(API_URL);
 
+      if (!response.ok) {
+        throw new Error(`API returned status ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      products = Array.isArray(data)
+        ? data
+        : Array.isArray(data.products)
+          ? data.products
+          : [];
+
+      // Store a compatible catalogue copy for other existing site scripts.
+      localStorage.setItem(
+        "janoluxProducts",
+        JSON.stringify(
+          products.map(product => ({
+            ...product,
+            id: getProductId(product)
+          }))
+        )
+      );
+    } catch (error) {
+      console.error("Could not load products from MongoDB:", error);
+      products = [];
+    }
+  }
+
+  function updateCart() {
+    if (!cartItemsContainer) return;
+
+    const cart = readCart();
+    saveCart(cart);
     cartItemsContainer.innerHTML = "";
 
     const totalQuantity = cart.reduce(
@@ -80,28 +132,28 @@ document.addEventListener("DOMContentLoaded", () => {
       0
     );
 
-    const subtotal = cart.reduce(
-      (total, item) => total + item.price * item.quantity,
-      0
-    );
+    const subtotal = cart.reduce((total, item) => {
+      const displayItem = getDisplayItem(item);
+      return total + displayItem.price * item.quantity;
+    }, 0);
 
-    cartCountElement.textContent = totalQuantity;
-    itemCountElement.textContent =
-      `${totalQuantity} item${totalQuantity === 1 ? "" : "s"}`;
+    if (cartCountElement) cartCountElement.textContent = totalQuantity;
 
-    subtotalElement.textContent = formatPrice(subtotal);
-    totalElement.textContent = formatPrice(subtotal);
+    if (itemCountElement) {
+      itemCountElement.textContent =
+        `${totalQuantity} item${totalQuantity === 1 ? "" : "s"}`;
+    }
 
-    checkoutBtn.disabled = cart.length === 0;
+    if (subtotalElement) subtotalElement.textContent = formatPrice(subtotal);
+    if (totalElement) totalElement.textContent = formatPrice(subtotal);
+    if (checkoutBtn) checkoutBtn.disabled = cart.length === 0;
 
     if (cart.length === 0) {
       const empty = createElement("div", "empty-cart");
-
       const icon = createElement("i", "fas fa-shopping-bag");
       icon.setAttribute("aria-hidden", "true");
 
       const heading = createElement("h3", "", "Your cart is empty");
-
       const message = createElement(
         "p",
         "",
@@ -117,41 +169,52 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     cart.forEach(item => {
+      const displayItem = getDisplayItem(item);
       const row = createElement("article", "cart-item");
 
       const image = createElement("img");
-      image.src = item.image;
-      image.alt = item.name;
+      image.alt = displayItem.name;
       image.loading = "lazy";
+
+      if (displayItem.image) {
+        image.src = displayItem.image;
+      } else {
+        image.alt = `${displayItem.name} — image unavailable`;
+        image.classList.add("cart-image-unavailable");
+      }
 
       image.addEventListener("error", () => {
         image.style.display = "none";
       }, { once: true });
 
       const info = createElement("div", "cart-item-info");
-      const name = createElement("h3", "", item.name);
-      const price = createElement("p", "", formatPrice(item.price));
+      const name = createElement("h3", "", displayItem.name);
+      const price = createElement("p", "", formatPrice(displayItem.price));
 
       const quantityControl = createElement("div", "quantity-control");
 
       const decrease = createElement("button", "", "−");
       decrease.type = "button";
-      decrease.setAttribute("aria-label", `Decrease ${item.name}`);
+      decrease.setAttribute("aria-label", `Decrease ${displayItem.name}`);
+      decrease.disabled = item.quantity <= 1;
 
       const quantity = createElement("span", "", item.quantity);
 
       const increase = createElement("button", "", "+");
       increase.type = "button";
-      increase.setAttribute("aria-label", `Increase ${item.name}`);
+      increase.setAttribute("aria-label", `Increase ${displayItem.name}`);
 
       const product = findProduct(item);
-      const stock = product ? Number(product.stock) : null;
+      const hasStock = product &&
+        product.stock !== undefined &&
+        product.stock !== null &&
+        product.stock !== "";
 
-      if (product && Number.isFinite(stock)) {
+      const stock = hasStock ? Number(product.stock) : null;
+
+      if (hasStock && Number.isFinite(stock)) {
         increase.disabled = item.quantity >= stock;
       }
-
-      decrease.disabled = item.quantity <= 1;
 
       decrease.addEventListener("click", () => {
         changeQuantity(item.id, -1);
@@ -165,11 +228,10 @@ document.addEventListener("DOMContentLoaded", () => {
       info.append(name, price, quantityControl);
 
       const actions = createElement("div", "cart-item-actions");
-
       const lineTotal = createElement(
         "p",
         "cart-item-total",
-        formatPrice(item.price * item.quantity)
+        formatPrice(displayItem.price * item.quantity)
       );
 
       const remove = createElement("button", "remove-item", "Remove");
@@ -183,19 +245,18 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function changeQuantity(id, amount) {
-    const cart = getCart();
+    const cart = readCart();
     const item = cart.find(entry => String(entry.id) === String(id));
-
     if (!item) return;
 
     const newQuantity = item.quantity + amount;
-
-    // Keep at least one item. Use Remove to delete the item.
     if (newQuantity < 1) return;
 
     const product = findProduct(item);
 
-    if (amount > 0 && product) {
+    if (amount > 0 && product &&
+        product.stock !== undefined && product.stock !== null &&
+        product.stock !== "") {
       const stock = Number(product.stock);
 
       if (Number.isFinite(stock) && newQuantity > stock) {
@@ -210,27 +271,30 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function removeItem(id) {
-    const updatedCart = getCart().filter(
+    const cart = readCart().filter(
       item => String(item.id) !== String(id)
     );
 
-    saveCart(updatedCart);
+    saveCart(cart);
     updateCart();
   }
 
-checkoutBtn.addEventListener("click", () => {
-  if (getCart().length === 0) return;
-
-  window.location.href = "checkout.html";
-});
+  if (checkoutBtn) {
+    checkoutBtn.addEventListener("click", () => {
+      if (readCart().length > 0) {
+        window.location.href = "checkout.html";
+      }
+    });
+  }
 
   if (yearElement) {
     yearElement.textContent = new Date().getFullYear();
   }
 
+  // Load MongoDB products before rendering the cart.
+  await loadProducts();
   updateCart();
 
-  // Refresh the cart if another open tab changes its contents.
   window.addEventListener("storage", event => {
     if (event.key === "janoluxCart" || event.key === "janoluxProducts") {
       updateCart();

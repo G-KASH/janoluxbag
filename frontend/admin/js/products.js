@@ -1,37 +1,23 @@
 
-document.addEventListener("DOMContentLoaded", async () => {
+document.addEventListener("DOMContentLoaded", () => {
   const API_URL = "https://janoluxbag.onrender.com/api/products";
 
-  const productDetails = document.getElementById("productDetails");
-  const breadcrumbName = document.getElementById("breadcrumbName");
-  const cartCount = document.getElementById("cartCount");
-  const year = document.getElementById("year");
+  const tableBody = document.getElementById("productsTableBody");
+  const searchInput = document.getElementById("productSearch");
+  const categoryFilter = document.getElementById("categoryFilter");
+  const productCount = document.getElementById("productCount");
+  const inventoryMessage = document.getElementById("inventoryMessage");
+  const emptyProducts = document.getElementById("emptyProducts");
+  const logoutBtn = document.getElementById("logoutBtn");
+  const menuToggle = document.getElementById("menuToggle");
+  const sidebar = document.getElementById("sidebar");
 
-  let cart = [];
+  let products = [];
 
-  try {
-    const savedCart = JSON.parse(
-      localStorage.getItem("janoluxCart") || "[]"
-    );
-    cart = Array.isArray(savedCart) ? savedCart : [];
-  } catch {
-    cart = [];
-  }
-
-  const params = new URLSearchParams(window.location.search);
-  const productId = params.get("id");
-
-  if (year) {
-    year.textContent = new Date().getFullYear();
-  }
-
-  function updateCartCount() {
-    if (cartCount) {
-      cartCount.textContent = cart.reduce(
-        (total, item) => total + Number(item.quantity || 1),
-        0
-      );
-    }
+  // Protect the admin page
+  if (localStorage.getItem("janoluxAdminLoggedIn") !== "true") {
+    window.location.href = "login.html";
+    return;
   }
 
   function escapeHTML(value) {
@@ -40,292 +26,217 @@ document.addEventListener("DOMContentLoaded", async () => {
       "<": "&lt;",
       ">": "&gt;",
       '"': "&quot;",
-      "'": "&#039;"
+      "'": "&#39;"
     })[character]);
   }
 
-  function showMessage(title, message) {
-    if (breadcrumbName) breadcrumbName.textContent = title;
+  function formatPrice(price) {
+    return `KSh ${Number(price || 0).toLocaleString("en-KE")}`;
+  }
 
-    if (productDetails) {
-      productDetails.innerHTML = `
-        <div class="product-not-found">
-          <h2>${escapeHTML(title)}</h2>
-          <p>${escapeHTML(message)}</p>
-          <a href="index.html#shop" class="btn-primary">
-            Continue Shopping
-          </a>
-        </div>
+  function getStockStatus(stock) {
+    const quantity = Number(stock) || 0;
+
+    if (quantity <= 0) {
+      return '<span class="status-badge out-of-stock">Out of Stock</span>';
+    }
+
+    if (quantity <= 5) {
+      return '<span class="status-badge low-stock">Low Stock</span>';
+    }
+
+    return '<span class="status-badge in-stock">In Stock</span>';
+  }
+
+  function renderProducts() {
+    const searchTerm = (searchInput?.value || "").trim().toLowerCase();
+    const selectedCategory = categoryFilter?.value || "";
+
+    const filteredProducts = products.filter(product => {
+      const matchesSearch = [
+        product.name,
+        product.description,
+        product.category
+      ].some(value => String(value || "").toLowerCase().includes(searchTerm));
+
+      const matchesCategory =
+        !selectedCategory || product.category === selectedCategory;
+
+      return matchesSearch && matchesCategory;
+    });
+
+    if (productCount) {
+      productCount.textContent =
+        `${filteredProducts.length} product${filteredProducts.length === 1 ? "" : "s"}`;
+    }
+
+    if (inventoryMessage) {
+      inventoryMessage.textContent =
+        filteredProducts.length !== products.length
+          ? `Showing ${filteredProducts.length} of ${products.length}`
+          : "";
+    }
+
+    if (emptyProducts) {
+      emptyProducts.hidden = filteredProducts.length !== 0;
+    }
+
+    if (!filteredProducts.length) {
+      tableBody.innerHTML = `
+        <tr>
+          <td colspan="6" class="empty-state">
+            ${products.length
+              ? "No products match your search."
+              : "No products found in MongoDB. Add a product to get started."}
+          </td>
+        </tr>
       `;
+      return;
     }
+
+    tableBody.innerHTML = filteredProducts.map(product => {
+      const id = String(product._id || product.id || "");
+      const image = product.image || "";
+      const stock = Number(product.stock) || 0;
+
+      return `
+        <tr>
+          <td>
+            <div class="admin-product-info">
+              ${image
+                ? `<img
+                    src="${escapeHTML(image)}"
+                    alt="${escapeHTML(product.name)}"
+                    class="admin-product-image"
+                  >`
+                : ""}
+              <span>${escapeHTML(product.name || "Unnamed product")}</span>
+            </div>
+          </td>
+          <td>${escapeHTML(product.category || "Uncategorized")}</td>
+          <td>${formatPrice(product.price)}</td>
+          <td>${stock}</td>
+          <td>${getStockStatus(stock)}</td>
+          <td>
+            <div class="product-actions">
+              <a
+                class="edit-btn"
+                href="edit-product.html?id=${encodeURIComponent(id)}"
+              >Edit</a>
+              <button
+                type="button"
+                class="delete-btn"
+                data-delete-id="${escapeHTML(id)}"
+                data-delete-name="${escapeHTML(product.name || "this product")}"
+              >Delete</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join("");
   }
 
-  updateCartCount();
-
-  if (!productDetails) return;
-
-  if (!productId) {
-    showMessage("Product not found", "No product ID was provided in the link.");
-    return;
-  }
-
-  let product;
-
-  try {
-    productDetails.innerHTML = "<p>Loading product...</p>";
-
-    // First try fetching this product directly from MongoDB.
-    let response = await fetch(
-      `${API_URL}/${encodeURIComponent(productId)}`
-    );
-
-    if (response.ok) {
-      product = await response.json();
-    } else if (response.status === 404 || response.status === 400) {
-      // Fallback: find it in the complete product list.
-      response = await fetch(API_URL);
-
-      if (!response.ok) {
-        throw new Error("Could not load products from the server.");
-      }
-
-      const products = await response.json();
-
-      if (!Array.isArray(products)) {
-        throw new Error("The server returned an unexpected response.");
-      }
-
-      product = products.find(item =>
-        String(item._id ?? item.id) === String(productId)
-      );
-    } else {
-      throw new Error(`Product server returned ${response.status}.`);
-    }
-  } catch (error) {
-    console.error("Product loading error:", error);
-
-    showMessage(
-      "Unable to load product",
-      "Please check your internet connection and try again."
-    );
-    return;
-  }
-
-  if (!product) {
-    showMessage(
-      "Product not found",
-      "This product is not available in the online store. Please return to the shop and try again."
-    );
-    return;
-  }
-
-  // MongoDB uses _id; the cart and page use id.
-  product.id = String(product._id ?? product.id ?? productId);
-
-  const price = Number(product.price) || 0;
-  const stock = Math.max(0, Number(product.stock) || 0);
-
-  const images = [
-    product.image,
-    ...(Array.isArray(product.images) ? product.images : [])
-  ].filter(image =>
-    typeof image === "string" && image.trim() !== ""
-  );
-
-  let activeImageIndex = 0;
-
-  breadcrumbName.textContent = product.name || "Product";
-  document.title = `${product.name || "Product"} | JANOLUXBAG`;
-
-  function renderProduct() {
-    const activeImage = images[activeImageIndex] || "";
-
-    productDetails.innerHTML = `
-      <div class="product-gallery">
-        <div class="main-image-container">
-          ${
-            activeImage
-              ? `<img
-                   src="${escapeHTML(activeImage)}"
-                   alt="${escapeHTML(product.name)}"
-                   class="main-product-image"
-                   id="mainProductImage"
-                 >`
-              : `<div class="no-product-image">
-                   <i class="fas fa-image"></i>
-                   <p>No image available</p>
-                 </div>`
-          }
-        </div>
-
-        ${
-          images.length > 1
-            ? `<div class="product-thumbnails">
-                ${images.map((image, index) => `
-                  <button
-                    type="button"
-                    class="thumbnail ${index === activeImageIndex ? "active" : ""}"
-                    data-image-index="${index}"
-                    aria-label="View product image ${index + 1}"
-                  >
-                    <img
-                      src="${escapeHTML(image)}"
-                      alt="${escapeHTML(product.name)} image ${index + 1}"
-                    >
-                  </button>
-                `).join("")}
-              </div>`
-            : ""
-        }
-      </div>
-
-      <div class="product-information">
-        <p class="product-category">
-          ${escapeHTML(product.category || "Fashion")}
-        </p>
-
-        ${product.featured ? '<span class="featured-label">Featured Product</span>' : ""}
-
-        <h1>${escapeHTML(product.name || "Unnamed Product")}</h1>
-
-        <p class="detail-price">KSh ${price.toLocaleString("en-KE")}</p>
-
-        <p class="detail-stock ${stock > 0 ? "in-stock" : "out-of-stock"}">
-          ${stock > 0 ? `${stock} available in stock` : "Currently out of stock"}
-        </p>
-
-        <div class="detail-description">
-          <h3>Product Description</h3>
-          <p>${escapeHTML(product.description || "Contact us for more information about this product.")}</p>
-        </div>
-
-        <div class="quantity-control">
-          <label for="quantity">Quantity</label>
-          <div class="quantity-buttons">
-            <button type="button" id="decreaseQuantity" aria-label="Decrease quantity" ${stock === 0 ? "disabled" : ""}>−</button>
-            <input
-              type="number"
-              id="quantity"
-              value="1"
-              min="1"
-              max="${stock}"
-              ${stock === 0 ? "disabled" : ""}
-            >
-            <button type="button" id="increaseQuantity" aria-label="Increase quantity" ${stock === 0 ? "disabled" : ""}>+</button>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          id="addToCartBtn"
-          class="btn-primary add-to-cart-btn"
-          ${stock === 0 ? "disabled" : ""}
-        >
-          <i class="fas fa-shopping-bag"></i>
-          ${stock > 0 ? "Add to Cart" : "Out of Stock"}
-        </button>
-
-        <div id="productMessage" class="product-message" role="status"></div>
-
-        <div class="product-benefits">
-          <p><i class="fas fa-check-circle"></i> Quality fashion accessories</p>
-          <p><i class="fas fa-truck"></i> Contact us for delivery details</p>
-          <p><i class="fas fa-shield-alt"></i> Shop with confidence</p>
-        </div>
-      </div>
+  async function loadProducts() {
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="6" class="empty-state">Loading products from MongoDB...</td>
+      </tr>
     `;
 
-    const quantityInput = document.getElementById("quantity");
+    try {
+      const response = await fetch(API_URL);
 
-    document.getElementById("decreaseQuantity")?.addEventListener("click", () => {
-      quantityInput.value = Math.max(
-        1,
-        Number(quantityInput.value || 1) - 1
+      if (!response.ok) {
+        throw new Error(`Server returned HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (!Array.isArray(data)) {
+        throw new Error("The API did not return a product list.");
+      }
+
+      products = data.sort((a, b) =>
+        new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
       );
-    });
 
-    document.getElementById("increaseQuantity")?.addEventListener("click", () => {
-      quantityInput.value = Math.min(
-        stock,
-        Number(quantityInput.value || 1) + 1
-      );
-    });
+      renderProducts();
+    } catch (error) {
+      console.error("Could not load admin products:", error);
 
-    quantityInput?.addEventListener("change", () => {
-      let quantity = Number.parseInt(quantityInput.value, 10);
+      tableBody.innerHTML = `
+        <tr>
+          <td colspan="6" class="empty-state">
+            Unable to load products. Check your internet connection
+            and try refreshing this page.
+          </td>
+        </tr>
+      `;
 
-      if (!Number.isFinite(quantity)) quantity = 1;
-
-      quantityInput.value = Math.min(stock, Math.max(1, quantity));
-    });
-
-    document.querySelectorAll(".thumbnail").forEach(button => {
-      button.addEventListener("click", () => {
-        activeImageIndex = Number(button.dataset.imageIndex);
-        renderProduct();
-      });
-    });
-
-    document.getElementById("addToCartBtn")?.addEventListener(
-      "click",
-      addToCart
-    );
+      if (productCount) productCount.textContent = "Unavailable";
+      if (inventoryMessage) inventoryMessage.textContent = "API connection failed";
+    }
   }
 
-  function addToCart() {
-    const quantityInput = document.getElementById("quantity");
-    const message = document.getElementById("productMessage");
-    const quantity = Number.parseInt(quantityInput.value, 10);
+  // Delete directly from MongoDB
+  tableBody.addEventListener("click", async event => {
+    const button = event.target.closest("[data-delete-id]");
+    if (!button) return;
 
-    if (!Number.isInteger(quantity) || quantity < 1) {
-      message.textContent = "Please enter a valid quantity.";
+    const id = button.dataset.deleteId;
+    const name = button.dataset.deleteName || "this product";
+
+    if (!id || !confirm(`Are you sure you want to delete "${name}"?`)) {
       return;
     }
 
-    if (quantity > stock) {
-      message.textContent = `Only ${stock} item(s) are available.`;
-      return;
+    button.disabled = true;
+    button.textContent = "Deleting...";
+
+    try {
+      const response = await fetch(
+        `${API_URL}/${encodeURIComponent(id)}`,
+        { method: "DELETE" }
+      );
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(result.message || `Delete failed: HTTP ${response.status}`);
+      }
+
+      products = products.filter(product =>
+        String(product._id || product.id) !== id
+      );
+
+      renderProducts();
+
+      if (inventoryMessage) {
+        inventoryMessage.textContent = "Product deleted from the database.";
+      }
+    } catch (error) {
+      console.error("Product deletion failed:", error);
+      alert(
+        "Could not delete the product. Check the server and try again.\n" +
+        error.message
+      );
+      button.disabled = false;
+      button.textContent = "Delete";
     }
+  });
 
-    const existingItem = cart.find(
-      item => String(item.id) === String(product.id)
-    );
+  searchInput?.addEventListener("input", renderProducts);
+  categoryFilter?.addEventListener("change", renderProducts);
 
-    const alreadyInCart = existingItem
-      ? Number(existingItem.quantity || 0)
-      : 0;
-
-    if (alreadyInCart + quantity > stock) {
-      message.textContent =
-        `You can only add ${Math.max(0, stock - alreadyInCart)} more item(s) to your cart.`;
-      return;
-    }
-
-    if (existingItem) {
-      existingItem.quantity = alreadyInCart + quantity;
-    } else {
-      cart.push({
-        id: product.id,
-        name: product.name,
-        price,
-        image: product.image || "",
-        quantity
-      });
-    }
-
-    localStorage.setItem("janoluxCart", JSON.stringify(cart));
-    updateCartCount();
-
-    message.textContent = "Product added to your cart successfully.";
-  }
-
-  renderProduct();
-
-  // Mobile navigation
-  const menuToggle = document.getElementById("menuToggle");
-  const navLinks = document.getElementById("navLinks");
+  logoutBtn?.addEventListener("click", () => {
+    localStorage.removeItem("janoluxAdminLoggedIn");
+    localStorage.removeItem("janoluxAdminEmail");
+    window.location.href = "login.html";
+  });
 
   menuToggle?.addEventListener("click", () => {
-    navLinks?.classList.toggle("active");
+    sidebar?.classList.toggle("open");
   });
+
+  loadProducts();
 });
