@@ -1,5 +1,7 @@
 
 document.addEventListener("DOMContentLoaded", () => {
+  const API_URL = "https://janoluxbag.onrender.com/api/products";
+
   const productGrid = document.getElementById("productGrid");
   const resultCount = document.getElementById("resultCount");
   const emptyMessage = document.getElementById("emptyMessage");
@@ -9,22 +11,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const cartCount = document.getElementById("cartCount");
 
   let selectedCategory = "";
+  let allProducts = [];
+  let loadFailed = false;
 
-  // Load products added through the admin dashboard
   function getProducts() {
-    try {
-      const products = JSON.parse(
-        localStorage.getItem("janoluxProducts") || "[]"
-      );
-
-      return Array.isArray(products) ? products : [];
-    } catch (error) {
-      console.error("Unable to load store products:", error);
-      return [];
-    }
+    return allProducts;
   }
 
-  // Escape product text before displaying it
   function escapeHTML(value) {
     return String(value ?? "").replace(/[&<>"']/g, char => ({
       "&": "&amp;",
@@ -39,32 +32,45 @@ document.addEventListener("DOMContentLoaded", () => {
     return Number(price || 0).toLocaleString("en-KE");
   }
 
-  // Keep the cart count in sync with the saved cart
   function updateCartCount() {
     if (!cartCount) return;
 
     try {
-      const cart = JSON.parse(localStorage.getItem("janoluxCart") || "[]");
+      const cart = JSON.parse(
+        localStorage.getItem("janoluxCart") || "[]"
+      );
 
       cartCount.textContent = Array.isArray(cart)
-        ? cart.reduce((total, item) => total + Number(item.quantity || 1), 0)
+        ? cart.reduce(
+            (total, item) => total + Number(item.quantity || 1),
+            0
+          )
         : 0;
     } catch {
       cartCount.textContent = "0";
     }
   }
 
-  // Display products on the storefront
   function displayProducts(products) {
+    if (!productGrid || !resultCount || !emptyMessage) return;
+
     resultCount.textContent =
       `${products.length} product${products.length === 1 ? "" : "s"} found`;
 
     if (products.length === 0) {
       productGrid.innerHTML = "";
       emptyMessage.hidden = false;
-      emptyMessage.textContent = getProducts().length === 0
-        ? "Our collection is being updated. Please check back soon."
-        : "No products found. Try another search or category.";
+
+      if (loadFailed) {
+        emptyMessage.textContent =
+          "We couldn't load products right now. Please refresh the page and try again.";
+      } else if (getProducts().length === 0) {
+        emptyMessage.textContent =
+          "Our collection is being updated. Please check back soon.";
+      } else {
+        emptyMessage.textContent =
+          "No products found. Try another search or category.";
+      }
 
       return;
     }
@@ -72,10 +78,10 @@ document.addEventListener("DOMContentLoaded", () => {
     emptyMessage.hidden = true;
 
     productGrid.innerHTML = products.map(product => {
-      const id = encodeURIComponent(String(product.id ?? ""));
+      const id = encodeURIComponent(String(product.id ?? product._id ?? ""));
       const name = escapeHTML(product.name);
       const category = escapeHTML(product.category);
-      const image = product.image || "";
+      const image = escapeHTML(product.image || "");
       const price = formatPrice(product.price);
       const stock = Number(product.stock || 0);
 
@@ -112,14 +118,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }).join("");
   }
 
-  // Search, filter and sort
   function renderProducts() {
-    let products = getProducts();
+    if (!searchInput || !sortProducts) return;
 
-    const searchTerm = searchInput.value.trim().toLowerCase();
-    const sortOption = sortProducts.value;
+    let products = getProducts().filter(product => {
+      const searchTerm = searchInput.value.trim().toLowerCase();
 
-    products = products.filter(product => {
       const matchesSearch =
         String(product.name || "").toLowerCase().includes(searchTerm) ||
         String(product.description || "").toLowerCase().includes(searchTerm) ||
@@ -130,6 +134,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
       return matchesSearch && matchesCategory;
     });
+
+    const sortOption = sortProducts.value;
 
     if (sortOption === "low") {
       products.sort((a, b) => Number(a.price) - Number(b.price));
@@ -148,28 +154,67 @@ document.addEventListener("DOMContentLoaded", () => {
     displayProducts(products);
   }
 
-  // Search without reloading the page
-  searchInput.addEventListener("input", renderProducts);
+  async function loadProducts() {
+    if (productGrid && emptyMessage) {
+      productGrid.innerHTML = "";
+      emptyMessage.hidden = false;
+      emptyMessage.textContent = "Loading products...";
+    }
 
-  // Prevent the search form from reloading the page
-  searchForm.addEventListener("submit", event => {
-    event.preventDefault();
-    renderProducts();
-    document.getElementById("shop").scrollIntoView({
-      behavior: "smooth"
+    try {
+      const response = await fetch(API_URL);
+
+      if (!response.ok) {
+        throw new Error(`Product API returned ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (!Array.isArray(data)) {
+        throw new Error("Unexpected product API response");
+      }
+
+      allProducts = data.map(product => ({
+        ...product,
+        id: String(product._id ?? product.id ?? "")
+      }));
+
+      loadFailed = false;
+      renderProducts();
+    } catch (error) {
+      console.error("Unable to load products from MongoDB:", error);
+      allProducts = [];
+      loadFailed = true;
+      renderProducts();
+    }
+  }
+
+  if (searchInput) {
+    searchInput.addEventListener("input", renderProducts);
+  }
+
+  if (searchForm) {
+    searchForm.addEventListener("submit", event => {
+      event.preventDefault();
+      renderProducts();
+
+      document.getElementById("shop")?.scrollIntoView({
+        behavior: "smooth"
+      });
     });
-  });
+  }
 
-  // Sorting
-  sortProducts.addEventListener("change", renderProducts);
+  if (sortProducts) {
+    sortProducts.addEventListener("change", renderProducts);
+  }
 
-  // Clicking a category filters the product list
   document.querySelectorAll(".category-card").forEach(button => {
     button.addEventListener("click", () => {
       selectedCategory = button.dataset.category || "";
-      searchInput.value = "";
 
-      document.getElementById("shop").scrollIntoView({
+      if (searchInput) searchInput.value = "";
+
+      document.getElementById("shop")?.scrollIntoView({
         behavior: "smooth"
       });
 
@@ -177,11 +222,9 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Automatically update the year in the footer
   const year = document.getElementById("year");
   if (year) year.textContent = new Date().getFullYear();
 
-  // Initial display
-  renderProducts();
   updateCartCount();
+  loadProducts();
 });

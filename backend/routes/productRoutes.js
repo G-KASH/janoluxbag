@@ -33,7 +33,16 @@ router.get("/:id", async (req, res) => {
 // CREATE product
 router.post("/", async (req, res) => {
   try {
-    const { name, description, price, category, image, images, stock } = req.body;
+    const {
+  name,
+  description,
+  price,
+  category,
+  image,
+  images,
+  stock,
+  featured,
+} = req.body;
 
     if (!name || !description || price === undefined || !category) {
       return res.status(400).json({
@@ -49,6 +58,7 @@ router.post("/", async (req, res) => {
       image,
       images,
       stock,
+      featured,
     });
 
     res.status(201).json({

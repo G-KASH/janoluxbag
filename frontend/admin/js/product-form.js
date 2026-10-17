@@ -1,3 +1,6 @@
+
+const API_URL = "https://janoluxbag.onrender.com/api/products";
+
 // Protect admin page
 if (localStorage.getItem("janoluxAdminLoggedIn") !== "true") {
   window.location.href = "login.html";
@@ -18,32 +21,7 @@ const mainImagePreview = document.getElementById("mainImagePreview");
 const extraImagesPreview = document.getElementById("extraImagesPreview");
 const formMessage = document.getElementById("formMessage");
 
-
-// Get existing products
-function getProducts() {
-  try {
-    const products = JSON.parse(
-      localStorage.getItem("janoluxProducts") || "[]"
-    );
-
-    return Array.isArray(products) ? products : [];
-  } catch (error) {
-    console.error("Could not load products:", error);
-    return [];
-  }
-}
-
-
-// Save products
-function saveProducts(products) {
-  localStorage.setItem(
-    "janoluxProducts",
-    JSON.stringify(products)
-  );
-}
-
-
-// Convert an image file into a Base64 image
+// Convert an image file into Base64
 function readImage(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -55,35 +33,26 @@ function readImage(file) {
   });
 }
 
-
-// Show main image preview
+// Preview main image
 mainImage.addEventListener("change", () => {
   mainImagePreview.innerHTML = "";
 
   const file = mainImage.files[0];
-
-  if (!file) {
-    return;
-  }
+  if (!file) return;
 
   const image = document.createElement("img");
-
   image.src = URL.createObjectURL(file);
   image.alt = "Main product preview";
 
   mainImagePreview.appendChild(image);
 });
 
-
-// Show additional image previews
+// Preview additional images
 extraImages.addEventListener("change", () => {
   extraImagesPreview.innerHTML = "";
 
-  const files = Array.from(extraImages.files);
-
-  files.forEach(file => {
+  Array.from(extraImages.files).forEach(file => {
     const image = document.createElement("img");
-
     image.src = URL.createObjectURL(file);
     image.alt = "Additional product preview";
 
@@ -91,8 +60,7 @@ extraImages.addEventListener("change", () => {
   });
 });
 
-
-// Display message
+// Show status message
 function showMessage(message, type = "success") {
   formMessage.textContent = message;
 
@@ -105,12 +73,10 @@ function showMessage(message, type = "success") {
   }
 }
 
-
-// Submit product form
+// Submit product to MongoDB through Render
 productForm.addEventListener("submit", async event => {
   event.preventDefault();
 
-  // Get values
   const name = productName.value.trim();
   const category = productCategory.value;
   const price = Number(productPrice.value);
@@ -121,8 +87,6 @@ productForm.addEventListener("submit", async event => {
   const mainFile = mainImage.files[0];
   const extraFiles = Array.from(extraImages.files);
 
-
-  // Validation
   if (!name) {
     showMessage("Please enter the product name.", "error");
     return;
@@ -133,13 +97,21 @@ productForm.addEventListener("submit", async event => {
     return;
   }
 
-  if (!price || price < 0) {
+  if (
+    productPrice.value.trim() === "" ||
+    !Number.isFinite(price) ||
+    price <= 0
+  ) {
     showMessage("Please enter a valid product price.", "error");
     return;
   }
 
-  if (stock < 0 || Number.isNaN(stock)) {
-    showMessage("Please enter a valid stock quantity.", "error");
+  if (
+    productStock.value.trim() === "" ||
+    !Number.isInteger(stock) ||
+    stock < 0
+  ) {
+    showMessage("Please enter a valid whole-number stock quantity.", "error");
     return;
   }
 
@@ -153,104 +125,100 @@ productForm.addEventListener("submit", async event => {
     return;
   }
 
+  // Prevent excessively large image requests
+  const allFiles = [mainFile, ...extraFiles];
+  const totalBytes = allFiles.reduce((sum, file) => sum + file.size, 0);
+
+  if (allFiles.some(file => !file.type.startsWith("image/"))) {
+    showMessage("Please select image files only.", "error");
+    return;
+  }
+
+  if (totalBytes > 5 * 1024 * 1024) {
+    showMessage(
+      "Please select images totalling no more than 5 MB. Smaller images work best.",
+      "error"
+    );
+    return;
+  }
+
+  const submitButton = productForm.querySelector(
+    'button[type="submit"], input[type="submit"]'
+  );
 
   try {
+    showMessage("Uploading product to MongoDB...");
 
-    // Show saving message
-    showMessage("Saving product...");
+    if (submitButton) submitButton.disabled = true;
 
-
-    // Convert main image
     const mainImageData = await readImage(mainFile);
-
-
-    // Convert additional images
     const additionalImages = [];
 
     for (const file of extraFiles) {
-      const imageData = await readImage(file);
-      additionalImages.push(imageData);
+      additionalImages.push(await readImage(file));
     }
 
-
-    // Create product
     const product = {
-      id: Date.now().toString(),
-
-      name: name,
-
-      category: category,
-
-      price: price,
-
-      stock: stock,
-
-      description: description,
-
+      name,
+      category,
+      price,
+      stock,
+      description,
       image: mainImageData,
-
       images: additionalImages,
-
-      featured: featured,
-
-      createdAt: new Date().toISOString()
+      featured
     };
 
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(product)
+    });
 
-    // Get existing products
-    const products = getProducts();
+    const result = await response.json().catch(() => ({}));
 
+    if (!response.ok) {
+      throw new Error(
+        result.message || `Server returned error ${response.status}`
+      );
+    }
 
-    // Add new product
-    products.push(product);
+    showMessage("Product saved to MongoDB successfully!");
 
-
-    // Save
-    saveProducts(products);
-
-
-    // Success
-    showMessage("Product added successfully!");
-
-
-    // Reset form
     productForm.reset();
-
     mainImagePreview.innerHTML = "";
     extraImagesPreview.innerHTML = "";
 
-
-    // Redirect to Manage Products
     setTimeout(() => {
       window.location.href = "products.html";
-    }, 1000);
-
+    }, 1200);
 
   } catch (error) {
-
     console.error("Product save error:", error);
 
     showMessage(
-      "Unable to save the product. Your browser storage may be full.",
+      error.message.includes("Failed to fetch")
+        ? "Could not reach the product server. Check your internet connection and Render status."
+        : `Unable to save product: ${error.message}`,
       "error"
     );
+  } finally {
+    if (submitButton) submitButton.disabled = false;
   }
 });
-
 
 // Logout
 const logoutBtn = document.getElementById("logoutBtn");
 
 if (logoutBtn) {
   logoutBtn.addEventListener("click", () => {
-
     localStorage.removeItem("janoluxAdminLoggedIn");
     localStorage.removeItem("janoluxAdminEmail");
-
     window.location.href = "login.html";
   });
 }
-
 
 // Mobile menu
 const menuToggle = document.getElementById("menuToggle");
