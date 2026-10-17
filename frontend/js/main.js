@@ -1,5 +1,7 @@
 
 document.addEventListener("DOMContentLoaded", () => {
+  const API_URL = "https://janoluxbag.onrender.com/api/products";
+
   const productGrid = document.getElementById("productGrid");
   const resultCount = document.getElementById("resultCount");
   const emptyMessage = document.getElementById("emptyMessage");
@@ -8,23 +10,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const sortProducts = document.getElementById("sortProducts");
   const cartCount = document.getElementById("cartCount");
 
+  let allProducts = [];
   let selectedCategory = "";
 
-  // Load products added through the admin dashboard
-  function getProducts() {
-    try {
-      const products = JSON.parse(
-        localStorage.getItem("janoluxProducts") || "[]"
-      );
-
-      return Array.isArray(products) ? products : [];
-    } catch (error) {
-      console.error("Unable to load store products:", error);
-      return [];
-    }
-  }
-
-  // Escape product text before displaying it
+  // Escape text before inserting it into HTML
   function escapeHTML(value) {
     return String(value ?? "").replace(/[&<>"']/g, char => ({
       "&": "&amp;",
@@ -39,55 +28,115 @@ document.addEventListener("DOMContentLoaded", () => {
     return Number(price || 0).toLocaleString("en-KE");
   }
 
-  // Keep the cart count in sync with the saved cart
+  // Update cart count; the shopping cart remains in localStorage
   function updateCartCount() {
     if (!cartCount) return;
 
     try {
-      const cart = JSON.parse(localStorage.getItem("janoluxCart") || "[]");
+      const cart = JSON.parse(
+        localStorage.getItem("janoluxCart") || "[]"
+      );
 
       cartCount.textContent = Array.isArray(cart)
-        ? cart.reduce((total, item) => total + Number(item.quantity || 1), 0)
+        ? cart.reduce(
+            (total, item) => total + Number(item.quantity || 1),
+            0
+          )
         : 0;
     } catch {
       cartCount.textContent = "0";
     }
   }
 
+  // Fetch the current product list from the backend
+  async function loadProducts() {
+    if (productGrid) {
+      productGrid.innerHTML = "<p>Loading our collection...</p>";
+    }
+
+    try {
+      const response = await fetch(API_URL);
+
+      if (!response.ok) {
+        throw new Error(`Products API returned HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (!Array.isArray(data)) {
+        throw new Error("The server did not return a product list.");
+      }
+
+      // MongoDB uses _id; storefront links use id
+      allProducts = data.map(product => ({
+        ...product,
+        id: String(product._id ?? product.id ?? "")
+      }));
+
+      renderProducts();
+    } catch (error) {
+      console.error("Unable to load store products:", error);
+
+      if (productGrid) productGrid.innerHTML = "";
+      if (resultCount) resultCount.textContent = "";
+
+      if (emptyMessage) {
+        emptyMessage.hidden = false;
+        emptyMessage.textContent =
+          "We couldn't load our collection right now. Please refresh the page and try again.";
+      }
+    }
+  }
+
   // Display products on the storefront
   function displayProducts(products) {
-    resultCount.textContent =
-      `${products.length} product${products.length === 1 ? "" : "s"} found`;
+    if (!productGrid) return;
+
+    if (resultCount) {
+      resultCount.textContent =
+        `${products.length} product${products.length === 1 ? "" : "s"} found`;
+    }
 
     if (products.length === 0) {
       productGrid.innerHTML = "";
-      emptyMessage.hidden = false;
-      emptyMessage.textContent = getProducts().length === 0
-        ? "Our collection is being updated. Please check back soon."
-        : "No products found. Try another search or category.";
+
+      if (emptyMessage) {
+        emptyMessage.hidden = false;
+        emptyMessage.textContent = allProducts.length === 0
+          ? "Our collection is being updated. Please check back soon."
+          : "No products found. Try another search or category.";
+      }
 
       return;
     }
 
-    emptyMessage.hidden = true;
+    if (emptyMessage) emptyMessage.hidden = true;
 
     productGrid.innerHTML = products.map(product => {
-      const id = encodeURIComponent(String(product.id ?? ""));
-      const name = escapeHTML(product.name);
-      const category = escapeHTML(product.category);
-      const image = product.image || "";
+      const id = encodeURIComponent(String(product.id));
+      const name = escapeHTML(product.name || "Unnamed Product");
+      const category = escapeHTML(product.category || "Fashion");
+      const image = typeof product.image === "string"
+        ? product.image
+        : "";
       const price = formatPrice(product.price);
-      const stock = Number(product.stock || 0);
+      const stock = Number(product.stock) || 0;
 
       return `
         <article class="product-card">
           <a href="product.html?id=${id}" class="product-image-link">
             <div class="product-image">
-              <img
-                src="${image}"
-                alt="${name}"
-                loading="lazy"
-              >
+              ${
+                image
+                  ? `<img
+                       src="${escapeHTML(image)}"
+                       alt="${name}"
+                       loading="lazy"
+                     >`
+                  : `<div class="no-product-image">
+                       <p>Image unavailable</p>
+                     </div>`
+              }
               ${product.featured
                 ? '<span class="featured-badge">Featured</span>'
                 : ""}
@@ -112,21 +161,26 @@ document.addEventListener("DOMContentLoaded", () => {
     }).join("");
   }
 
-  // Search, filter and sort
+  // Search, filter and sort the fetched products
   function renderProducts() {
-    let products = getProducts();
+    let products = [...allProducts];
 
-    const searchTerm = searchInput.value.trim().toLowerCase();
-    const sortOption = sortProducts.value;
+    const searchTerm = (searchInput?.value || "").trim().toLowerCase();
+    const sortOption = sortProducts?.value || "";
 
     products = products.filter(product => {
-      const matchesSearch =
-        String(product.name || "").toLowerCase().includes(searchTerm) ||
-        String(product.description || "").toLowerCase().includes(searchTerm) ||
-        String(product.category || "").toLowerCase().includes(searchTerm);
+      const matchesSearch = [
+        product.name,
+        product.description,
+        product.category
+      ].some(value =>
+        String(value || "").toLowerCase().includes(searchTerm)
+      );
 
       const matchesCategory =
-        !selectedCategory || product.category === selectedCategory;
+        !selectedCategory ||
+        String(product.category || "").toLowerCase() ===
+          selectedCategory.toLowerCase();
 
       return matchesSearch && matchesCategory;
     });
@@ -137,7 +191,7 @@ document.addEventListener("DOMContentLoaded", () => {
       products.sort((a, b) => Number(b.price) - Number(a.price));
     } else if (sortOption === "name") {
       products.sort((a, b) =>
-        String(a.name).localeCompare(String(b.name))
+        String(a.name || "").localeCompare(String(b.name || ""))
       );
     } else {
       products.sort((a, b) =>
@@ -149,27 +203,28 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Search without reloading the page
-  searchInput.addEventListener("input", renderProducts);
+  searchInput?.addEventListener("input", renderProducts);
 
-  // Prevent the search form from reloading the page
-  searchForm.addEventListener("submit", event => {
+  searchForm?.addEventListener("submit", event => {
     event.preventDefault();
     renderProducts();
-    document.getElementById("shop").scrollIntoView({
+
+    document.getElementById("shop")?.scrollIntoView({
       behavior: "smooth"
     });
   });
 
   // Sorting
-  sortProducts.addEventListener("change", renderProducts);
+  sortProducts?.addEventListener("change", renderProducts);
 
-  // Clicking a category filters the product list
+  // Category cards
   document.querySelectorAll(".category-card").forEach(button => {
     button.addEventListener("click", () => {
       selectedCategory = button.dataset.category || "";
-      searchInput.value = "";
 
-      document.getElementById("shop").scrollIntoView({
+      if (searchInput) searchInput.value = "";
+
+      document.getElementById("shop")?.scrollIntoView({
         behavior: "smooth"
       });
 
@@ -177,11 +232,10 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Automatically update the year in the footer
+  // Footer year
   const year = document.getElementById("year");
   if (year) year.textContent = new Date().getFullYear();
 
-  // Initial display
-  renderProducts();
   updateCartCount();
+  loadProducts();
 });
